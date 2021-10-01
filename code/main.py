@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 from datetime import datetime as dt
 
 from sklearn import svm, ensemble
-#from sklearn.model_selection import train_test_split
 
 # データセットのクラス
 class Dataset:
@@ -16,7 +15,6 @@ class Dataset:
 
     # コンストラクタ
     def __init__(self, dataset, ind):
-        #strptime(tstr, '%Y-%m-%d %H:%M:%S')
         d_temp = dt.strptime(dataset[0,0], '%Y/%m/%d') # 日付を抽出
         self.dayFrom = dt.date(d_temp) # 起点日として格納
 
@@ -35,6 +33,29 @@ class Dataset:
         self.data = np.hstack((self.data, nf_temp))
         self.ind.append( key +'-Diff')
 
+    # 指定キーの特徴量の過去numステップ分を特徴量として抽出するメソッド
+    def extractPrecede(self, key, num):
+        k = self.ind.index(key)
+        #fv = np.array([])
+        for i in range(self.N):
+            fv_temp = np.array([]) # 空の配列を宣言
+            for j in range(num):
+                if i-j>=0:
+                    fv_temp = np.append(fv_temp, self.data[i-j,k])
+                else:
+                    fv_temp = np.append(fv_temp, 0)
+                
+            try:
+                fv = np.vstack((fv,fv_temp))
+            except UnboundLocalError: # fvが未定義のエラーが出たら
+                fv = fv_temp
+
+        keystr = []
+        for i in range(num):
+            keystr.append(key+'_-'+str(i))
+
+        return fv, keystr
+
 
 # データファイルを読み込み（数値データとして）
 rawdata = pd.read_csv('..\data\dataset_japan_20210928.csv', delimiter=',').values
@@ -50,6 +71,9 @@ ds = Dataset(ds_temp, ind)
 # 特徴量の準備
 ds.addDifference('discha-case')
 
+# 学習データを作成
+fv, fn = ds.extractPrecede('severe-case',4)
+
 # 特徴量のプロット作成
 x = np.arange(0, ds.N)
 fig0 = plt.figure()
@@ -63,4 +87,5 @@ ax.plot(x, ds.data[:,6], label=ds.ind[6]) # discha-case-Diff
 plt.legend(loc='best')
 plt.show()
 
-# 学習データを作成
+# 特徴量の決定
+
